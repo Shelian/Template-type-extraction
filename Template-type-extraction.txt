@@ -1,0 +1,235 @@
+#define _CRT_SECURE_NO_WARNINGS 1
+
+#include <iostream>
+using namespace std;
+ 
+struct __TrueType
+{
+	bool Get()
+	{
+		return true;
+	}
+};
+
+struct __FalseType
+{
+	bool Get()
+	{
+		return false;
+	}
+};
+
+template<class _TP>
+struct TypeTraits
+{
+	typedef __FalseType __IsPODType;
+};
+
+template<>
+struct TypeTraits<bool>
+{
+	typedef __TrueType __IsPODType;
+};
+
+template<>
+struct TypeTraits<char>
+{
+	typedef __TrueType __IsPODType;
+};
+
+template<>
+struct TypeTraits<short>
+{
+	typedef __TrueType __IsPODType;
+};
+
+template<>
+struct TypeTraits<int>
+{
+	typedef __TrueType __IsPODType;
+};
+
+template<>
+struct TypeTraits<long>
+{
+	typedef __TrueType __IsPODType;
+};
+
+template<>
+struct TypeTraits<unsigned long>
+{
+	typedef __TrueType __IsPODType;
+};
+
+template<class T>
+void Copy(T* dst, const T* src, size_t size, __TrueType)
+{
+	cout << "IsPODType:"<<typeid(T).name() << endl;
+	memcpy(dst, src, sizeof(T)*size);
+}
+
+template<class T>
+void Copy(T* dst, const T* src, size_t size, __FalseType)
+{
+	cout << "IsPODType:" << typeid(T).name() << endl;
+	for (size_t i = 0; i < size; i++)
+	{
+		dst[i] = src[i];
+	}
+}
+
+template<class T>
+void Copy(T* dst, const T* src, size_t size)
+{
+	cout << "IsPODType->:" << typeid(T).name() << endl;
+
+	if (TypeTraits<T>::__IsPODType().Get())
+	{
+		memcpy(dst, src, sizeof(T)*size);
+	}
+	else
+	{
+		for (size_t i = 0; i < size; i++)
+		{
+			dst[i] = src[i];
+		}
+	}
+}
+
+template<typename T>
+class SeqList
+{
+public:
+	SeqList()
+		:_array(NULL)
+		, _size(0)
+		, _capacity(0)
+	{}
+
+	~SeqList()
+	{
+		if (_array)
+		{
+			delete[] _array;
+		}
+	}
+
+	SeqList(const SeqList<T>& s)
+	{
+		_array = new T[s._size];
+
+		for (size_t i = 0; i < s._size; i++)
+		{
+			_array[i] = s._array[i];
+		}
+		_size = s._size;
+		_capacity = s._capacity;
+	}
+
+	SeqList<T>& operator=(SeqList<T> s)
+	{
+		swap(_array, s._array);
+		swap(_size, s._size);
+		swap(_capacity, s._capacity);
+
+		return *this;
+	}
+
+	void PushBack(const T& x)
+	{
+		_CheckCapacity(_size + 1);
+		_array[_size++] = x;
+	}
+
+	void PopBack()
+	{
+		if (_size == 0)
+		{
+			return;
+		}
+		else
+		{
+			--_size;
+		}
+	}
+
+	size_t Size()
+	{
+		return _size;
+	}
+
+	void Print()
+	{
+		for (size_t i = 0; i < _size; ++i)
+		{
+			cout << _array[i] << " ";
+		}
+		cout << endl;
+	}
+
+	void Reserve(size_t x)
+	{
+		_CheckCapacity(x);
+	}
+
+	T& operator[](size_t index)
+	{
+		assert(index < _size);
+
+		return _array[index];//如果不用引用，那么传过来的是一块临时空间，只是将临时空间的值给覆盖了，如果使用引用那么就是把对应的空间给出来，赋值的时候直接在原基础上改动
+	}
+
+protected:
+	void _CheckCapacity(size_t n)
+	{
+		if (n > _capacity)
+		{
+			_capacity = 2 * _capacity + 3 > n ? 2 * _capacity + 3 : n;
+			/*_array = (T*)realloc(_array, sizeof(T)*_capacity);*/
+
+			T* tmp = new T[_capacity];
+			if (_array)
+				/*memcpy(tmp, _array, sizeof(T)*_size);*/
+				/*for (size_t i = 0; i < _size; i++)
+				{
+				tmp[i] = _array[i];
+				}*/
+				Copy(tmp, _array, _capacity);
+
+			delete[] _array;
+			_array = tmp;
+		}
+	}
+
+private:
+	T* _array;
+	size_t _size;
+	size_t _capacity;
+};
+
+void Test()
+{
+	SeqList<int> s1;
+	s1.PushBack(1);
+	s1.PushBack(2);
+	s1.PushBack(3);
+	s1.PushBack(4);
+	s1.PushBack(5);
+	s1.Print();
+}
+
+int main()
+{
+	/*int a1[10] = { 1, 2, 3 };
+	int a2[10] = { 0 };
+	Copy(a2, a1, 10, TypeTraits<int>::__IsPODType());
+	Copy(a1, a2, 10);
+
+	string a3[10] = { "ssss" };
+	string a4[10] = { "xxxx" };
+	Copy(a4, a3, 10, TypeTraits<string>::__IsPODType());
+	Copy(a4, a3, 10);*/
+	Test();
+	system("pause");
+	return 0;
+}
